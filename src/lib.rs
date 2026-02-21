@@ -1,4 +1,4 @@
-// © ickk 2026, All Rights Reserved.
+// © ickk 2026.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(rustc::unsafe_op_in_unsafe_fn)]

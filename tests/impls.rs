@@ -1,4 +1,4 @@
-// © ickk 2026, All Rights Reserved.
+// © ickk 2026.
 
 //! Assert that all the same traits and constraints exist for [`slimvec`] as do
 //! for [`std::vec`].

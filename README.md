@@ -1,6 +1,8 @@
 `slimvec`
 =========
 
+[github](https://github.com/ickk/slimvec)
+
 [`SlimVec`] is analogous to the Standard Library's [`Vec`] collection type,
 however it has a smaller inline-size.
 
@@ -218,5 +220,13 @@ The `thin-vec` crate differs to `slimvec` in a few ways:
    iterator.
 
 
+Licensing
+---------
+
+This library may be licensed permissively; see [LICENSE.md] for details.
+
+[LICENSE.md]: ./LICENSE.md
+
+
 -------------------------------------------------------------------------------
-<footer><small>© ickk 2026, All Rights Reserved.</small></footer>
+<footer><small>© ickk 2026.</small></footer>

@@ -1,4 +1,4 @@
-// © ickk 2026, All Rights Reserved.
+// © ickk 2026.
 
 use {
   crate::{

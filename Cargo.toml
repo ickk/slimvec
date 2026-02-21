@@ -1,10 +1,20 @@
-# © ickk 2026, All Rights Reserved.
+# © ickk 2026.
 
 [package]
 name = "slimvec"
 version = "0.0.0"
 authors = ["ickk <crates@ickk.io>"]
+license-file = "./LICENSE.md"
 description = "Dynamic array with a smaller inline-size"
+repository = "https://github.com/ickk/slimvec"
+include = [
+  "README.md",
+  "LICENSE.md",
+  "LICENSE-APACHE",
+  "LICENSE-MIT",
+  "LICENSE-ZLIB",
+  "src/",
+]
 publish = false
 edition = "2024"
 
