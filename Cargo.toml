@@ -1,0 +1,18 @@
+# © ickk 2026, All Rights Reserved.
+
+[package]
+name = "slimvec"
+version = "0.0.0"
+authors = ["ickk <crates@ickk.io>"]
+description = "Dynamic array with a smaller inline-size"
+publish = false
+edition = "2024"
+
+[dependencies]
+
+[dev-dependencies]
+impls = "1.0.3"
+
+[features]
+default = ["std"]
+std = []
