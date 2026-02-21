@@ -2,7 +2,7 @@
 
 [package]
 name = "slimvec"
-version = "0.0.0"
+version = "0.1.1"
 authors = ["ickk <crates@ickk.io>"]
 license-file = "./LICENSE.md"
 description = "Dynamic array with a smaller inline-size"
