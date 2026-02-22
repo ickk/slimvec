@@ -18,6 +18,14 @@ jobs:
     - name: build
       run: cargo build --verbose
 
+  build-no-default-features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+    - name: test
+      run: cargo build --no-default-features --verbose
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -32,7 +40,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: clippy
-      run: cargo clippy
+      run: cargo clippy -- -Dwarnings
 
   miri:
     runs-on: ubuntu-latest
