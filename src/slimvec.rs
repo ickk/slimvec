@@ -6,8 +6,7 @@ use {
     raw_slimvec::RawSlimVec,
     utils::{TypeMeta, conform_range},
   },
-  ::core::{ops::RangeBounds, ptr, slice},
-  std::mem,
+  ::core::{mem, ops::RangeBounds, ptr, slice},
 };
 
 /// `SlimVec` is analogous to the Standard Library’s [`Vec`] collection type,
@@ -64,7 +63,7 @@ impl<T> SlimVec<T> {
     let new_capacity = required_capacity
       .and_then(|required| required.checked_next_power_of_two())
       .expect("capacity exceeds MAX_CAPACITY");
-    self.raw.grow_or_shrink_to(new_capacity);
+    self.raw.grow_to(new_capacity);
   }
 
   /// Reserve additional capacity
@@ -81,7 +80,10 @@ impl<T> SlimVec<T> {
       .len()
       .checked_add(additional)
       .expect("capacity exceeds MAX_CAPACITY");
-    self.raw.grow_or_shrink_to(new_capacity);
+    if new_capacity <= self.capacity() {
+      return;
+    }
+    self.raw.grow_to(new_capacity);
   }
 
   #[inline]
@@ -92,21 +94,21 @@ impl<T> SlimVec<T> {
   #[inline]
   pub fn truncate(&mut self, new_length: usize) {
     let length = self.len();
-    if new_length >= self.len() {
-      // Note: This diverging branch is always taken if the vector has not
-      // allocated and `T` is non-zero-sized;
-      // `capacity = 0` => `length = 0` => `new_length >= length`.
-      return;
-    }
-    // safety:
-    // - The vector has allocated or `T` is zero-sized.
-    // - `new_length` is less than `length`, so is trivially a valid length for
-    //   either non-zero-sized or zero-sized `T`.
-    // - The previous observation also guarantees that all elements in the
-    //   range `0..new_length` are initialised.
-    unsafe {
-      self.raw.set_length(new_length);
-      self.raw.drop_in_place(new_length..length);
+    if new_length < length {
+      debug_assert!(
+        self.capacity() > 0,
+        "The vector is allocated or T is zero-sized, since the length is non-zero"
+      );
+      // safety:
+      // - The vector has allocated or `T` is zero-sized;
+      // - `new_length` is less than `length`, so is trivially a valid length
+      //   for either non-zero-sized or zero-sized `T`.
+      // - The previous observation also guarantees that all elements in the
+      //   range `0..new_length` are initialised.
+      unsafe {
+        self.raw.set_length(new_length);
+        self.raw.drop_in_place(new_length..length);
+      }
     }
   }
 
@@ -280,13 +282,13 @@ impl<T> SlimVec<T> {
   pub fn extend_from_within<R>(&mut self, src: R)
   where
     T: Clone,
-    R: RangeBounds<usize>,
+    R: RangeBounds<usize> + Clone,
   {
     let range = conform_range(src, self.len());
     let additional = range.len();
     self.reserve(additional);
-    assert!(self.raw.is_allocated());
     for index in range {
+      debug_assert!(self.raw.is_allocated() || T::IS_ZST);
       unsafe {
         let element: T = self.get_unchecked(index).clone();
         self.raw.push_unchecked(element);
@@ -363,7 +365,8 @@ impl<T> SlimVec<T> {
     F: FnMut() -> T,
   {
     if new_length > self.len() {
-      self.extend(::core::iter::repeat_with(f));
+      let additional = new_length - self.len();
+      self.extend(::core::iter::repeat_with(f).take(additional));
     } else {
       self.truncate(new_length);
     }
@@ -377,7 +380,7 @@ impl<T> SlimVec<T> {
   #[inline]
   pub fn shrink_to(&mut self, min_capacity: usize) {
     if min_capacity < self.capacity() {
-      self.raw.grow_or_shrink_to(min_capacity);
+      self.raw.shrink_to(min_capacity);
     }
   }
 
@@ -571,7 +574,7 @@ impl<T, const N: usize> SlimVec<[T; N]> {
       let new_len = N
         .checked_mul(len)
         .filter(|&new_len| new_len <= cap)
-        .expect("length exceeded MAX_CAPACITY");
+        .expect("slimvec len overflow");
       (new_len, cap)
     } else {
       (N * len, N * cap)
@@ -1005,7 +1008,7 @@ mod convert {
 }
 
 mod cmp {
-  use {crate::SlimVec, ::core::cmp::Ordering};
+  use {crate::SlimVec, ::alloc::vec::Vec, ::core::cmp::Ordering};
 
   impl<T> Ord for SlimVec<T>
   where
@@ -1029,19 +1032,19 @@ mod cmp {
 
   impl<T> Eq for SlimVec<T> where T: Eq {}
 
-  impl<T> PartialEq for SlimVec<T>
+  impl<T, U> PartialEq<SlimVec<T>> for SlimVec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, other: &SlimVec<T>) -> bool {
       self.as_slice() == other.as_slice()
     }
   }
 
-  impl<T> PartialEq<[T]> for SlimVec<T>
+  impl<T, U> PartialEq<[T]> for SlimVec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &[T]) -> bool {
@@ -1049,9 +1052,9 @@ mod cmp {
     }
   }
 
-  impl<T> PartialEq<SlimVec<T>> for [T]
+  impl<T, U> PartialEq<SlimVec<T>> for [U]
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &SlimVec<T>) -> bool {
@@ -1059,9 +1062,9 @@ mod cmp {
     }
   }
 
-  impl<T> PartialEq<&[T]> for SlimVec<T>
+  impl<T, U> PartialEq<&[T]> for SlimVec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &&[T]) -> bool {
@@ -1069,9 +1072,9 @@ mod cmp {
     }
   }
 
-  impl<T> PartialEq<SlimVec<T>> for &[T]
+  impl<T, U> PartialEq<SlimVec<T>> for &[U]
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &SlimVec<T>) -> bool {
@@ -1079,9 +1082,9 @@ mod cmp {
     }
   }
 
-  impl<T> PartialEq<&mut [T]> for SlimVec<T>
+  impl<T, U> PartialEq<&mut [T]> for SlimVec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &&mut [T]) -> bool {
@@ -1089,9 +1092,9 @@ mod cmp {
     }
   }
 
-  impl<T> PartialEq<SlimVec<T>> for &mut [T]
+  impl<T, U> PartialEq<SlimVec<T>> for &mut [U]
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &SlimVec<T>) -> bool {
@@ -1099,9 +1102,9 @@ mod cmp {
     }
   }
 
-  impl<T, const N: usize> PartialEq<[T; N]> for SlimVec<T>
+  impl<T, U, const N: usize> PartialEq<[T; N]> for SlimVec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &[T; N]) -> bool {
@@ -1109,9 +1112,9 @@ mod cmp {
     }
   }
 
-  impl<T, const N: usize> PartialEq<&[T; N]> for SlimVec<T>
+  impl<T, U, const N: usize> PartialEq<&[T; N]> for SlimVec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &&[T; N]) -> bool {
@@ -1119,9 +1122,9 @@ mod cmp {
     }
   }
 
-  impl<T> PartialEq<Vec<T>> for SlimVec<T>
+  impl<T, U> PartialEq<Vec<T>> for SlimVec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &Vec<T>) -> bool {
@@ -1129,9 +1132,9 @@ mod cmp {
     }
   }
 
-  impl<T> PartialEq<SlimVec<T>> for Vec<T>
+  impl<T, U> PartialEq<SlimVec<T>> for Vec<U>
   where
-    T: PartialEq,
+    U: PartialEq<T>,
   {
     #[inline]
     fn eq(&self, other: &SlimVec<T>) -> bool {

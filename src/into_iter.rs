@@ -34,10 +34,10 @@ impl<T> IntoIter<T> {
   #[inline]
   pub fn as_slice(&self) -> &[T] {
     if self.slimvec.raw.is_allocated() || T::IS_ZST {
-      let Range { start, end } = self.yield_range;
+      let range = &self.yield_range;
       unsafe {
-        let ptr = self.slimvec.raw.element_ptr(start).as_ptr();
-        slice::from_raw_parts(ptr, end)
+        let ptr = self.slimvec.raw.element_ptr(range.start).as_ptr();
+        slice::from_raw_parts(ptr, range.len())
       }
     } else {
       &[]
@@ -47,10 +47,10 @@ impl<T> IntoIter<T> {
   #[inline]
   pub fn as_mut_slice(&mut self) -> &mut [T] {
     if self.slimvec.raw.is_allocated() || T::IS_ZST {
-      let Range { start, end } = self.yield_range;
+      let range = &self.yield_range;
       unsafe {
-        let ptr = self.slimvec.raw.element_ptr(start).as_mut();
-        slice::from_raw_parts_mut(ptr, end)
+        let ptr = self.slimvec.raw.element_ptr(range.start).as_ptr();
+        slice::from_raw_parts_mut(ptr, range.len())
       }
     } else {
       &mut []

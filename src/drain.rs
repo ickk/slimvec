@@ -117,7 +117,9 @@ impl<T> Drain<'_, T> {
     let yield_range = conform_range(range, slimvec.len());
     let tail = yield_range.end..slimvec.len();
     // See notes `UnwindSafe` impl below.
-    unsafe { slimvec.raw.set_length(yield_range.start) };
+    if !slimvec.is_empty() {
+      unsafe { slimvec.raw.set_length(yield_range.start) };
+    }
 
     Drain {
       slimvec,

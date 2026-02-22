@@ -1,6 +1,6 @@
 // © ickk 2026.
 
-use {crate::SlimVec, ::core::ptr};
+use {crate::SlimVec, ::alloc::boxed::Box, ::core::ptr};
 
 pub trait SliceExt {
   type Item;

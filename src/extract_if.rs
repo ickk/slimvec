@@ -72,7 +72,9 @@ impl<T, F> ExtractIf<'_, T, F> {
   {
     let filter_range = conform_range(range, slimvec.len());
     let original_len = slimvec.len();
-    unsafe { slimvec.raw.set_length(filter_range.start) };
+    if original_len > 0 {
+      unsafe { slimvec.raw.set_length(filter_range.start) };
+    }
     ExtractIf {
       slimvec,
       filter_range,

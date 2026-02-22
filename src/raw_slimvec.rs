@@ -645,23 +645,25 @@ impl<T> RawSlimVec<T> {
       return;
     }
 
-    if T::IS_ZST {
-      for _ in range.rev() {
-        // safety:
-        // - `T` has a size of 0, so is trivially valid for reads and writes.
-        // -  `dangling` pointer is properly aligned.
-        unsafe { ptr::NonNull::<T>::dangling().drop_in_place() };
+    if ::core::mem::needs_drop::<T>() {
+      if T::IS_ZST {
+        for _ in range.rev() {
+          // safety:
+          // - `T` has a size of 0, so is trivially valid for reads and writes.
+          // -  `dangling` pointer is properly aligned.
+          unsafe { ptr::NonNull::<T>::dangling().drop_in_place() };
+        }
+        return;
       }
-      return;
-    }
 
-    // safety:
-    // - `self.ptr` is valid for reads and writes since we have `&mut self`.
-    // - The caller promises `range` is valid for this buffer.
-    // - `range` is non-empty, so `self.ptr` must be allocated based on the
-    //   caller's promise.
-    // - The caller promises all elements in `range` are initialised.
-    unsafe { HeapData::drop_in_place(self.ptr, range) };
+      // safety:
+      // - `self.ptr` is valid for reads and writes since we have `&mut self`.
+      // - The caller promises `range` is valid for this buffer.
+      // - `range` is non-empty, so `self.ptr` must be allocated based on the
+      //   caller's promise.
+      // - The caller promises all elements in `range` are initialised.
+      unsafe { HeapData::drop_in_place(self.ptr, range) };
+    }
   }
 
   /// Returns a `NonNull` pointer to the start of the buffer
@@ -688,14 +690,17 @@ impl<T> RawSlimVec<T> {
   /// Returns a `NonNull` pointer to the element at `index` in the vector's
   /// buffer
   ///
+  /// Note that while an index equal to the capacity is valid, it is valid only
+  /// for zero-length reads.
+  ///
   /// # Safety
   ///
   /// - The vector must have allocated, or `T` must be zero-sized.
-  /// - `index` must be less than the `capacity`.
+  /// - `index` must be less than or equal to the `capacity`.
   #[inline]
   pub(crate) unsafe fn element_ptr(&self, index: usize) -> ptr::NonNull<T> {
     debug_assert!(
-      (self.is_allocated() || T::IS_ZST) && index < self.capacity(),
+      (self.is_allocated() || T::IS_ZST) && index <= self.capacity(),
       "safety criteria must be met"
     );
 
@@ -835,24 +840,47 @@ impl<T> RawSlimVec<T> {
     }
   }
 
-  /// Resize the allocation to `capacity`
+  /// Shrink the capacity of the vector to `new_capacity`
   ///
   /// The capacity will remain at least as large as `self.length()`.
   #[inline]
-  pub(crate) fn grow_or_shrink_to(&mut self, new_capacity: usize) {
+  pub(crate) fn shrink_to(&mut self, new_capacity: usize) {
     let new_capacity = self.length().max(new_capacity);
-    if new_capacity == self.capacity() {
+    if new_capacity >= self.capacity() {
       return;
     }
-    match (NonZero::new(new_capacity), self.is_allocated()) {
+    if self.is_allocated() {
+      if new_capacity == 0 {
+        // safety: The vector is allocated.
+        unsafe { self.deallocate() }
+      } else {
+        let new_capacity =
+          NonZero::new(new_capacity).unwrap_or_else(|| unreachable!());
+        // safety:
+        // - The vector is allocated.
+        // - Receiver is `&mut self`, so there are no dangling references.
+        unsafe { self.reallocate(new_capacity) };
+      }
+    }
+  }
+
+  /// Grow the capacity of the vector to `new_capacity`
+  ///
+  /// The capacity will remain at least as large as `self.capacity()`.
+  #[inline]
+  pub(crate) fn grow_to(&mut self, new_capacity: usize) {
+    if new_capacity <= self.capacity() {
+      return;
+    }
+    let new_capacity =
+      NonZero::new(new_capacity).unwrap_or_else(|| unreachable!());
+    if self.is_allocated() {
       // safety:
       // - The vector is allocated.
       // - Receiver is `&mut self`, so there are no dangling references.
-      (Some(new_capacity), true) => unsafe { self.reallocate(new_capacity) },
-      (Some(new_capacity), false) => self.allocate(new_capacity),
-      // safety: The vector is allocated.
-      (None, true) => unsafe { self.deallocate() },
-      (None, false) => (),
+      unsafe { self.reallocate(new_capacity) };
+    } else {
+      self.allocate(new_capacity);
     }
   }
 
