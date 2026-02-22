@@ -155,7 +155,8 @@ Testing
 -------
 
 `slimvec` is testing against a suite of smoke-tests, a suite of tests ensuring
-it implements the same traits as the Standard Library's `Vec`.
+it implements the same traits as the Standard Library's `Vec`, and also against
+a port of the Standard Library's test-suite for `Vec`.
 
 
 Future Work
@@ -167,8 +168,6 @@ In the future `SlimVec` would like to add support for the currently unstable
 Rust features `allocator-api` & `#[may_dangle]`.
 
 Support for ecosystem Traits, e.g. serialisation, is also desirable.
-
-It is desirable to test against the Standard Library's test suite for `Vec`.
 
 
 Alternatives
