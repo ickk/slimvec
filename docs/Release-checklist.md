@@ -1,0 +1,15 @@
+- [ ] Rustfmt is idempotent.
+- [ ] Tests pass.
+- [ ] Clippy is happy.
+- [ ] Miri is silent.
+- [ ] CI is green.
+- [ ] `cargo package --list` seems correct.
+- [ ] Rustdoc looks good.
+- [ ] Bump version number:
+  - The patch version is always increased such that the patch is unique among
+    all releases.
+  - Regenerate `Cargo.lock`
+- [ ] Push version git tag.
+- [ ] `cargo publish --dry-run`.
+- [ ] `cargo publish`.
+- [ ] Create github release for tag.
