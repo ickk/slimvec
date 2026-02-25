@@ -2,6 +2,7 @@
 
 use {crate::SlimVec, ::alloc::boxed::Box, ::core::ptr};
 
+/// Methods extending `[T]` that return a `SlimVec<T>`
 pub trait SliceExt {
   type Item;
 
