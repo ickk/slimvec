@@ -43,6 +43,7 @@ pub(crate) struct HeapData<T> {
 /// The actual buffer is dynamically-sized with explicit memory management.
 /// However this zero-sized place-holder helps force the correct alignment and
 /// offset within `HeapData`.
+#[repr(transparent)]
 pub(crate) struct Buffer<T>([mem::MaybeUninit<T>; 0]);
 
 macro_rules! assert_zst {
