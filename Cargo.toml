@@ -2,7 +2,7 @@
 
 [package]
 name = "slimvec"
-version = "0.1.2"
+version = "0.2.3"
 authors = ["ickk <crates@ickk.io>"]
 license-file = "LICENSE.md"
 license = "Zlib OR MIT OR Apache-2.0"
@@ -19,7 +19,6 @@ include = [
   "docs/Overview.md",
   "docs/Architecture.md",
 ]
-publish = false
 
 [dependencies]
 

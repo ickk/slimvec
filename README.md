@@ -13,6 +13,23 @@ it has a smaller inline-size.
 - [Testing](docs/Testing.md)
 - [Future-work](docs/Future-work.md)
 
+```text
+  SlimVec<T>            Allocation
++-------------+       +-------------+
+| ptr: 0xabcd | ----> | length:   2 |
++-------------+       |-------------|
+                      | capacity: 4 |
+                      |=============|
+                      | 0:        A |
+                      |-------------|
+                      | 1:        B |
+                      |-------------|
+                      | 2: <uninit> |
+                      |-------------|
+                      | 3: <uninit> |
+                      +-------------+
+```
+
 Licensing
 ---------
 
