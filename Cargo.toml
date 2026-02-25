@@ -2,7 +2,7 @@
 
 [package]
 name = "slimvec"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["ickk <crates@ickk.io>"]
 license-file = "LICENSE.md"
 license = "Zlib OR MIT OR Apache-2.0"
