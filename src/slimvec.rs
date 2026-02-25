@@ -460,11 +460,9 @@ impl<T> SlimVec<T> {
         unsafe { ptr::NonNull::drop_in_place(v) };
       }
     }
-    unsafe {
-      self.raw.write(new_len, bucket_e.read());
-      new_len += 1;
-      self.raw.set_length(new_len);
-    }
+    unsafe { self.raw.element_ptr(new_len).copy_from(bucket_e, 1) };
+    new_len += 1;
+    unsafe { self.raw.set_length(new_len) };
   }
 
   #[inline]
