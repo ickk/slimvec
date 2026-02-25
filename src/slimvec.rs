@@ -434,9 +434,9 @@ impl<T> SlimVec<T> {
   /// vector, and its result decides whether the second element will be
   /// removed.
   ///
-  /// Note: This differs from `std::vec::Vec::dedup_by` in that here the
-  /// arguments to `is_equal` are passed in the same relative order that they
-  /// appear in the vector.
+  /// Note: For conformance with the behaviour of [`Vec::dedup_by`] the
+  /// arguments to `is_equal` are passed in the opposite order from their order
+  /// in the vector.
   #[inline]
   pub fn dedup_by<F>(&mut self, mut is_equal: F)
   where
@@ -452,11 +452,9 @@ impl<T> SlimVec<T> {
     let mut bucket_e: ptr::NonNull<T> = unsafe { self.raw.element_ptr(0) };
     for i in 1..count {
       let mut v: ptr::NonNull<T> = unsafe { self.raw.element_ptr(i) };
-      if !is_equal(unsafe { bucket_e.as_mut() }, unsafe { v.as_mut() }) {
-        unsafe {
-          self.raw.write(new_len, bucket_e.read());
-          bucket_e = v;
-        }
+      if !is_equal(unsafe { v.as_mut() }, unsafe { bucket_e.as_mut() }) {
+        unsafe { self.raw.element_ptr(new_len).copy_from(bucket_e, 1) };
+        bucket_e = v;
         new_len += 1;
       } else {
         unsafe { ptr::NonNull::drop_in_place(v) };

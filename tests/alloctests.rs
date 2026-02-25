@@ -534,7 +534,6 @@ fn test_dedup_by_key() {
   case(vec![10, 11, 20, 21, 22, 30, 31], vec![10, 20, 30]);
 }
 
-#[ignore = "slimvec has a different argument order for dedup_by closure"]
 #[test]
 fn test_dedup_by() {
   let mut vec = vec!["foo", "bar", "Bar", "baz", "bar"];
