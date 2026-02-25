@@ -114,7 +114,7 @@ where
     let len = self.drain.slimvec.len();
     let tail_len = self.drain.tail.len();
     let rep_len = replacements.len();
-    if replacements.is_empty() {
+    if !replacements.is_empty() {
       self.drain.slimvec.reserve(rep_len + tail_len);
       unsafe { self.drain.shift_tail(len + rep_len) };
       self.drain.slimvec.append(&mut replacements);
