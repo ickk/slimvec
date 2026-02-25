@@ -2,7 +2,32 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(rustc::unsafe_op_in_unsafe_fn)]
-#![doc = include_str!("../README.md")]
+
+//! # `slimvec`
+//!
+//! [github](https://github.com/ickk/slimvec)
+//!
+//! <details open>
+//! <summary>
+//!
+//! ## Overview
+//! </summary>
+//!
+#![doc = include_str!("../docs/Overview.md")]
+//!
+//! </details>
+//!
+//! <details>
+//! <summary>
+//!
+//! ## Architecture
+//! </summary>
+//!
+#![doc = include_str!("../docs/Architecture.md")]
+//!
+//! </details>
+//!
+#![doc = include_str!("../LICENSE.md")]
 
 extern crate alloc;
 
