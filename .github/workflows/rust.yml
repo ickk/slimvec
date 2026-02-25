@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 5
     steps:
     - uses: actions/checkout@v4
-    - name: test
+    - name: build
       run: cargo build --no-default-features --verbose
 
   test:
