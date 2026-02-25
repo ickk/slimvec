@@ -1,4 +1,4 @@
-// © ickk 2026.
+// Copyright © ickk, 2026
 
 use ::slimvec::{SliceExt, SlimVec, slimvec};
 

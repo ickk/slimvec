@@ -14,7 +14,7 @@ at your option.
 </summary>
 
 ```text
-Copyright © 2026 ickk.
+Copyright © ickk, 2026
 
 This software is provided 'as-is', without any express or implied warranty. In
 no event will the authors be held liable for any damages arising from the use
@@ -43,7 +43,7 @@ the following restrictions:
 </summary>
 
 ```text
-Copyright © 2026 ickk.
+Copyright © ickk, 2026
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -72,7 +72,7 @@ SOFTWARE.
 </summary>
 
 ```text
-Copyright © 2026 ickk.
+Copyright © ickk, 2026
 
 Licensed under the Apache License, Version 2.0 (the "License"); You may obtain
 a copy of the License at

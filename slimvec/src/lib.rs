@@ -1,11 +1,15 @@
-// © ickk 2026.
+// Copyright © ickk, 2026
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(rustc::unsafe_op_in_unsafe_fn)]
 
 //! # `slimvec`
 //!
-//! [github](https://github.com/ickk/slimvec)
+//! [crates.io] | [docs.rs] | [github]
+//!
+//! [crates.io]: https://crates.io/crates/slimvec
+//! [docs.rs]: https://docs.rs/slimvec
+//! [github]: https://github.com/ickk/slimvec
 //!
 //! <details open>
 //! <summary>

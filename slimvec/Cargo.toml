@@ -1,0 +1,26 @@
+# Copyright © ickk, 2026
+
+[package]
+name = "slimvec"
+version = "0.2.4"
+authors = ["ickk <crates@ickk.io>"]
+license = "Zlib OR MIT OR Apache-2.0"
+description = "Dynamic array with a smaller inline-size"
+repository = "https://github.com/ickk/slimvec"
+readme = "README.md"
+edition.workspace = true
+categories = ["data-structures", "no-std"]
+keywords = ["thin", "vec"]
+include = [
+  "src/",
+  "LICENSE.md",
+  "README.md",
+  "docs/Overview.md",
+  "docs/Architecture.md",
+]
+
+[dependencies]
+
+[features]
+default = ["std"]
+std = []

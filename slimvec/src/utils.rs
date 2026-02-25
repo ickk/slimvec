@@ -1,3 +1,5 @@
+// Copyright © ickk, 2026
+
 use ::core::{
   mem,
   ops::{Bound, Range, RangeBounds},

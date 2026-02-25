@@ -1,9 +1,3 @@
-<!--
-Note: This is a copy of slimvec/README.md with fixed-up links. It is necessary
-due to the limitations of cargo; packages are unable to include files in parent
-directories.
--->
-
 `slimvec`
 =========
 
@@ -16,10 +10,10 @@ directories.
 `SlimVec` is analogous to the Standard Library's `Vec` collection type, however
 it has a smaller inline-size.
 
-- [Overview](slimvec/docs/Overview.md)
-- [Architecture](slimvec/docs/Architecture.md)
-- [Testing](slimvec/docs/Testing.md)
-- [Future-work](slimvec/docs/Future-work.md)
+- [Overview](docs/Overview.md)
+- [Architecture](docs/Architecture.md)
+- [Testing](docs/Testing.md)
+- [Future-work](docs/Future-work.md)
 
 ```text
   SlimVec<T>            Allocation
@@ -42,12 +36,12 @@ Licensing
 ---------
 
 This library may be licensed under any of the following
-[Zlib-License](slimvec/LICENSE.md#zlib-license),
-[MIT-License](slimvec/LICENSE.md#mit-license), or
-[Apache2-License](slimvec/LICENSE.md#apache2-license)
+[Zlib-License](LICENSE.md#zlib-license),
+[MIT-License](LICENSE.md#mit-license), or
+[Apache2-License](LICENSE.md#apache2-license)
 at your option.
 
-See [slimvec/LICENSE.md](slimvec/LICENSE.md) for details.
+See [LICENSE.md](LICENSE.md) for details.
 
 -------------------------------------------------------------------------------
 <footer><small>Copyright © ickk, 2026</small></footer>

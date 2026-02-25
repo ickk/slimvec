@@ -1,0 +1,12 @@
+# Copyright © ickk, 2026
+
+[package]
+name = "slimvec-testsuites"
+edition.workspace = true
+publish = false
+
+[dependencies]
+
+[dev-dependencies]
+impls.workspace = true
+slimvec.workspace = true
