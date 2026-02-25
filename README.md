@@ -1,8 +1,10 @@
 `slimvec`
 =========
 
-[github]
+[crates.io] | [docs.rs] | [github]
 
+[crates.io]: https://crates.io/crates/slimvec
+[docs.rs]: https://docs.rs/slimvec
 [github]: https://github.com/ickk/slimvec
 
 `SlimVec` is analogous to the Standard Library's `Vec` collection type, however
