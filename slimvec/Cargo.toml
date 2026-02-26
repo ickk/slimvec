@@ -22,10 +22,12 @@ include = [
 [features]
 default = ["std"]
 
+arbitrary = ["dep:arbitrary"]
 serde = ["dep:serde_core"]
 std = []
 
 [dependencies]
+arbitrary = { workspace = true, optional = true }
 serde_core = { workspace = true, optional = true }
 
 [package.metadata.docs.rs]

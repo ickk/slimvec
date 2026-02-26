@@ -10,6 +10,7 @@ edition = "2024"
 [workspace.dependencies]
 slimvec.path = "slimvec"
 
+arbitrary = "1.0"
 impls = "1.0.3"
 serde_core = "1.0"
 
