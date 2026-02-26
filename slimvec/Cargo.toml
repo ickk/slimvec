@@ -21,9 +21,12 @@ include = [
 
 [features]
 default = ["std"]
+
+serde = ["dep:serde_core"]
 std = []
 
 [dependencies]
+serde_core = { workspace = true, optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
