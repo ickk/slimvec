@@ -5,7 +5,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-default-features:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -13,13 +13,21 @@ jobs:
     - name: build
       run: cargo build --verbose
 
-  build-no-default-features:
+  build-no-features:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
     - uses: actions/checkout@v6
     - name: build --no-default-features
       run: cargo build --no-default-features --verbose
+
+  build-all-features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v6
+    - name: build --all-features
+      run: cargo build --all-features --verbose
 
   test:
     runs-on: ubuntu-latest
