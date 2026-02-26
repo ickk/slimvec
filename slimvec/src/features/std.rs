@@ -1,6 +1,5 @@
 // Copyright © ickk, 2026
 
-#[cfg(feature = "std")]
 use {crate::SlimVec, ::std::io};
 
 impl io::Write for SlimVec<u8> {
