@@ -1,3 +1,5 @@
+// Copyright © ickk, 2026
+
 #[cfg(feature = "arbitrary")]
 mod arbitrary;
 #[cfg(feature = "serde")]

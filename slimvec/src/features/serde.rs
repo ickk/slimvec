@@ -1,3 +1,5 @@
+// Copyright © ickk, 2026
+
 use {
   crate::SlimVec,
   ::core::{fmt, marker::PhantomData},
