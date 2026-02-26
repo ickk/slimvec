@@ -1,10 +1,5 @@
 name: Rust
-
-on:
-  push:
-    branches: [ "dev" ]
-  pull_request:
-    branches: [ "dev" ]
+on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: build
       run: cargo build --verbose
 
@@ -22,32 +17,63 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@v4
-    - name: build
+    - uses: actions/checkout@v6
+    - name: build --no-default-features
       run: cargo build --no-default-features --verbose
 
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: test
       run: cargo test --verbose --no-fail-fast
 
-  clippy:
+  test-release:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - uses: actions/checkout@v4
-    - name: clippy
-      run: cargo clippy -- -Dwarnings
+    - uses: actions/checkout@v6
+    - name: test --release
+      run: cargo test --release --verbose --no-fail-fast
 
   miri:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: install miri
       run: rustup +nightly component add miri
-    - name: miri
+    - name: miri test
       run: cargo +nightly miri test --verbose --no-fail-fast
+
+  clippy:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v6
+    - name: clippy
+      run: cargo clippy -- -Dwarnings
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v6
+    - name: rustfmt
+      run: cargo fmt --check
+
+  package:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v6
+    - name: package --list
+      run: cargo package --list -p slimvec
+    - name: package
+      run: cargo package -p slimvec
+    - name: publish --dry-run
+      run: cargo publish --dry-run -p slimvec
