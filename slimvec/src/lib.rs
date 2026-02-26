@@ -36,6 +36,7 @@ extern crate alloc;
 
 mod drain;
 mod extract_if;
+mod features;
 mod into_iter;
 mod raw_slimvec;
 mod slice_ext;
