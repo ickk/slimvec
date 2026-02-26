@@ -40,12 +40,10 @@ Licensing
 ---------
 
 This library may be licensed under any of the following
-[Zlib-License](LICENSE.md#zlib-license),
-[MIT-License](LICENSE.md#mit-license), or
-[Apache2-License](LICENSE.md#apache2-license)
+[LICENSE-ZLIB](LICENSE-ZLIB),
+[LICENSE-MIT](LICENSE-MIT), or
+[LICENSE-APACHE2](LICENSE-APACHE2)
 at your option.
-
-See [LICENSE.md](LICENSE.md) for details.
 
 -------------------------------------------------------------------------------
 <footer><small>Copyright © ickk, 2026</small></footer>

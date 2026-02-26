@@ -13,9 +13,12 @@ categories = ["data-structures", "no-std"]
 keywords = ["thin", "vec", "thinvec"]
 include = [
   "src/",
-  "LICENSE.md",
+  "LICENSE-MIT",
+  "LICENSE-ZLIB",
+  "LICENSE-APACHE2",
   "README.md",
   "docs/Overview.md",
+  "docs/Features.md",
   "docs/Architecture.md",
 ]
 

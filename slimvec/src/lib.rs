@@ -37,8 +37,49 @@
 #![doc = include_str!("../docs/Architecture.md")]
 //!
 //! </details>
+//! <details open>
+//! <summary>
 //!
-#![doc = include_str!("../LICENSE.md")]
+//! ## Licensing
+//! </summary>
+//!
+//! This library may be licensed under any of the following
+//! [LICENSE-MIT](#license-mit),
+//! [LICENSE-ZLIB](#license-zlib), or
+//! [LICENSE-APACHE2](#license-apache2)
+//! at your option.
+//!
+//! <details open>
+//! <summary>
+//!
+//! ### LICENSE-MIT
+//! </summary>
+//!
+//! ```text
+#![doc = include_str!("../LICENSE-MIT")]
+//! ```
+//! </details>
+//! <details>
+//! <summary>
+//!
+//! ### LICENSE-ZLIB
+//! </summary>
+//!
+//! ```text
+#![doc = include_str!("../LICENSE-ZLIB")]
+//! ```
+//! </details>
+//! <details>
+//! <summary>
+//!
+//! ### LICENSE-APACHE2
+//! </summary>
+//!
+//! ```text
+#![doc = include_str!("../LICENSE-APACHE2")]
+//! ```
+//! </details>
+//! </details>
 
 extern crate alloc;
 

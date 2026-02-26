@@ -46,12 +46,10 @@ Licensing
 ---------
 
 This library may be licensed under any of the following
-[Zlib-License](slimvec/LICENSE.md#zlib-license),
-[MIT-License](slimvec/LICENSE.md#mit-license), or
-[Apache2-License](slimvec/LICENSE.md#apache2-license)
+[LICENSE-ZLIB](slimvec/LICENSE-ZLIB),
+[LICENSE-MIT](slimvec/LICENSE-MIT), or
+[LICENSE-APACHE2](slimvec/LICENSE-APACHE2)
 at your option.
-
-See [slimvec/LICENSE.md](slimvec/LICENSE.md) for details.
 
 -------------------------------------------------------------------------------
 <footer><small>Copyright © ickk, 2026</small></footer>
