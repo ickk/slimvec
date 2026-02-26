@@ -35,7 +35,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: test
-      run: cargo test --verbose --no-fail-fast
+      run: cargo test --all-features --verbose --no-fail-fast
 
   test-release:
     runs-on: ubuntu-latest
@@ -43,7 +43,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: test --release
-      run: cargo test --release --verbose --no-fail-fast
+      run: cargo test --release --all-features --verbose --no-fail-fast
 
   miri:
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
     - name: install miri
       run: rustup +nightly component add miri
     - name: miri test
-      run: cargo +nightly miri test --verbose --no-fail-fast
+      run: cargo +nightly miri test --all-features --verbose --no-fail-fast
 
   clippy:
     runs-on: ubuntu-latest
@@ -62,7 +62,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: clippy
-      run: cargo clippy -- -Dwarnings
+      run: cargo clippy --all-features -- -Dwarnings
 
   rustfmt:
     runs-on: ubuntu-latest
