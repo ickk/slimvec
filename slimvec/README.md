@@ -13,9 +13,11 @@ it has a smaller inline-size; the inline data is a thin pointer like thin-vec.
 `SlimVec` implements as much of the API surface of `Vec` as possible.
 
 - [Overview](docs/Overview.md)
+- [Features](docs/Features.md)
 - [Architecture](docs/Architecture.md)
 - [Testing](docs/Testing.md)
 - [Future-work](docs/Future-work.md)
+- [Alternatives](docs/Alternatives.md)
 
 ```text
   SlimVec<T>            Allocation

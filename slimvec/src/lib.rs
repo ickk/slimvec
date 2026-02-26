@@ -19,7 +19,15 @@
 #![doc = include_str!("../docs/Overview.md")]
 //!
 //! </details>
+//! <details>
+//! <summary>
 //!
+//! ## Features
+//! </summary>
+//!
+#![doc = include_str!("../docs/Features.md")]
+//!
+//! </details>
 //! <details>
 //! <summary>
 //!
