@@ -14,7 +14,9 @@ directories.
 [github]: https://github.com/ickk/slimvec
 
 `SlimVec` is analogous to the Standard Library's `Vec` collection type, however
-it has a smaller inline-size.
+it has a smaller inline-size; the inline data is a thin pointer like thin-vec.
+
+`SlimVec` implements as much of the API surface of `Vec` as possible.
 
 - [Overview](slimvec/docs/Overview.md)
 - [Architecture](slimvec/docs/Architecture.md)
