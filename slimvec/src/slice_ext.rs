@@ -39,17 +39,20 @@ impl<T> SliceExt for [T] {
     T: Copy,
   {
     let mut slimvec = SlimVec::new();
-    slimvec.reserve_exact(self.len().checked_mul(n).expect("overflow"));
-    for i in 0..n {
-      unsafe {
-        ptr::copy_nonoverlapping(
-          self.as_ptr(),
-          slimvec.raw.element_ptr(i * self.len()).as_ptr(),
-          self.len(),
-        );
+    let capacity = self.len().checked_mul(n).expect("overflow");
+    if capacity > 0 {
+      slimvec.reserve_exact(capacity);
+      for i in 0..n {
+        unsafe {
+          ptr::copy_nonoverlapping(
+            self.as_ptr(),
+            slimvec.raw.element_ptr(i * self.len()).as_ptr(),
+            self.len(),
+          );
+        }
       }
+      unsafe { slimvec.raw.set_length(self.len() * n) };
     }
-    unsafe { slimvec.raw.set_length(self.len() * n) };
     slimvec
   }
 }
