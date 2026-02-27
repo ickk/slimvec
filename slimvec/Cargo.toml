@@ -28,10 +28,12 @@ default = ["std"]
 arbitrary = ["dep:arbitrary"]
 serde = ["dep:serde_core"]
 std = []
+valuable = ["dep:valuable"]
 
 [dependencies]
 arbitrary = { workspace = true, optional = true }
 serde_core = { workspace = true, optional = true }
+valuable = { workspace = true, optional = true }
 
 [package.metadata.docs.rs]
 all-features = true

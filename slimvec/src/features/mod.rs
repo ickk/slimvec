@@ -6,3 +6,5 @@ mod arbitrary;
 mod serde;
 #[cfg(feature = "std")]
 mod std;
+#[cfg(feature = "valuable")]
+mod valuable;

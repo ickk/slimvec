@@ -12,6 +12,12 @@ Enables support for [`arbitrary`].
 
 ### `serde`
 
-Enable serialisation and deserialisation via [`serde`].
+Enables serialisation and deserialisation via [`serde`].
 
 [`serde`]: https://crates.io/crates/serde
+
+### `valuable`
+
+Enables value inspect via [`valuable`].
+
+[`valuable`]: https://crates.io/crates/valuable
