@@ -81,6 +81,7 @@ where
       self.drain.slimvec.extend(&mut self.replacements);
       return;
     }
+    // At this point it is known that `capacity >= tail.len > 0`.
 
     // If the size-hint appears to be exact, then use the size-hint to resize
     // the void.
@@ -90,7 +91,9 @@ where
     {
       let len = self.drain.slimvec.len();
       let tail_len = self.drain.tail.len();
+      // After this reserve, `capacity >= (len + tail_len + size_hint)`.
       self.drain.slimvec.reserve(size_hint + tail_len);
+      // safety: `capacity > 0`.
       unsafe { self.drain.shift_tail(len + size_hint) }
     }
 
@@ -100,10 +103,10 @@ where
     if !self.drain.void().is_empty() {
       let len = self.drain.slimvec.len();
       let tail_len = self.drain.tail.len();
-      unsafe {
-        self.drain.shift_tail(len);
-        self.drain.slimvec.raw.set_length(len + tail_len)
-      };
+      // safety: `capacity > 0`.
+      unsafe { self.drain.shift_tail(len) };
+      // safety: `capacity > 0`.
+      unsafe { self.drain.slimvec.raw.set_length(len + tail_len) };
       return;
     }
 
@@ -116,9 +119,12 @@ where
     let rep_len = replacements.len();
     if !replacements.is_empty() {
       self.drain.slimvec.reserve(rep_len + tail_len);
+      // safety: `capacity > 0`.
       unsafe { self.drain.shift_tail(len + rep_len) };
       self.drain.slimvec.append(&mut replacements);
     }
+
+    // safety: `capacity > 0`.
     unsafe { self.drain.slimvec.raw.set_length(len + rep_len + tail_len) };
   }
 }

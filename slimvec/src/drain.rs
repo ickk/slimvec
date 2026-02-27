@@ -1,10 +1,7 @@
 // Copyright © ickk, 2026
 
 use {
-  crate::{
-    SlimVec,
-    utils::{TypeMeta, conform_range},
-  },
+  crate::{SlimVec, utils::conform_range},
   ::core::{
     convert::AsRef,
     fmt,
@@ -34,7 +31,8 @@ where
 impl<T> Drain<'_, T> {
   #[inline]
   pub fn as_slice(&self) -> &[T] {
-    if self.slimvec.raw.is_allocated() || T::IS_ZST {
+    if self.slimvec.raw.is_capacity_gt_zero() {
+      // safety: capacity > 0.
       unsafe {
         let ptr = self
           .slimvec
@@ -58,9 +56,7 @@ impl<T> Iterator for Drain<'_, T> {
       return None;
     }
     self.yield_range.start += 1;
-    // safety:
-    // - If `self.len()` is not zero then either the vector is allocated or `T`
-    //   is zero-sized.
+    // safety: `self.len != 0` implies `slimvec.capacity >= slimvec.len > 0`.
     let element = unsafe { self.slimvec.raw.read(self.yield_range.start - 1) };
     Some(element)
   }
@@ -79,9 +75,7 @@ impl<T> DoubleEndedIterator for Drain<'_, T> {
       return None;
     }
     self.yield_range.end -= 1;
-    // safety:
-    // - If `self.len()` is not zero then either the vector is allocated or `T`
-    //   is zero-sized.
+    // safety: `self.len != 0` implies `slimvec.capacity >= slimvec.len > 0`.
     let element = unsafe { self.slimvec.raw.read(self.yield_range.end) };
     Some(element)
   }
@@ -118,6 +112,7 @@ impl<T> Drain<'_, T> {
     let tail = yield_range.end..slimvec.len();
     // See notes `UnwindSafe` impl below.
     if !slimvec.is_empty() {
+      // safety: `len != 0` implies `capacity > 0`.
       unsafe { slimvec.raw.set_length(yield_range.start) };
     }
 
@@ -144,8 +139,7 @@ impl<T> Drain<'_, T> {
   #[inline]
   pub(crate) fn fill_void(&mut self, with: &mut impl Iterator<Item = T>) {
     for element in with.by_ref().take(self.void().len()) {
-      // safety: If the length of the void is greater then zero, the vector has
-      // necessarily allocated (or T is zero-sized).
+      // safety: `capacity >= void.len > 0`
       unsafe { self.slimvec.raw.push_unchecked(element) };
     }
   }
@@ -156,10 +150,15 @@ impl<T> Drain<'_, T> {
   ///
   /// # Safety
   ///
-  /// - `slimvec` must have allocated or `T` must be zero-sized.
-  /// - `slimvec` must already have sufficient capacity.
+  /// - `self.slimvec`'s capacity must be greater than zero.
+  /// - `self.slimvec` must already have sufficient capacity for the tail.
   #[inline]
   pub(crate) unsafe fn shift_tail(&mut self, to_index: usize) {
+    debug_assert!(
+      (self.slimvec.raw.is_capacity_gt_zero())
+        && (self.slimvec.capacity() >= (to_index + self.tail.len())),
+      "required safety criteria"
+    );
     unsafe {
       ptr::NonNull::copy_from(
         self.slimvec.raw.element_ptr(to_index),
@@ -178,8 +177,8 @@ impl<T> Drop for Drain<'_, T> {
     unsafe { self.slimvec.raw.drop_in_place(yield_range) };
     if !self.tail.is_empty() {
       let new_len = self.slimvec.len() + self.tail.len();
-      // safety: if the tail is not empty, then either the vector is allocated
-      // or `T` is zero-sized.
+      // safety:
+      // - `tail.len != 0` implies `slimvec.capacity > 0`.
       unsafe {
         self.shift_tail(self.slimvec.len());
         self.slimvec.raw.set_length(new_len);

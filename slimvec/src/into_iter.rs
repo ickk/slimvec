@@ -1,7 +1,7 @@
 // Copyright © ickk, 2026
 
 use {
-  crate::{SlimVec, utils::TypeMeta},
+  crate::SlimVec,
   ::core::{
     convert::AsRef,
     fmt,
@@ -33,7 +33,7 @@ impl<T> Default for IntoIter<T> {
 impl<T> IntoIter<T> {
   #[inline]
   pub fn as_slice(&self) -> &[T] {
-    if self.slimvec.raw.is_allocated() || T::IS_ZST {
+    if self.slimvec.raw.is_capacity_gt_zero() {
       let range = &self.yield_range;
       unsafe {
         let ptr = self.slimvec.raw.element_ptr(range.start).as_ptr();
@@ -46,7 +46,7 @@ impl<T> IntoIter<T> {
 
   #[inline]
   pub fn as_mut_slice(&mut self) -> &mut [T] {
-    if self.slimvec.raw.is_allocated() || T::IS_ZST {
+    if self.slimvec.raw.is_capacity_gt_zero() {
       let range = &self.yield_range;
       unsafe {
         let ptr = self.slimvec.raw.element_ptr(range.start).as_ptr();
@@ -67,9 +67,7 @@ impl<T> Iterator for IntoIter<T> {
       return None;
     }
     self.yield_range.start += 1;
-    // safety:
-    // - If `self.len()` is not zero then either the vector is allocated or `T`
-    //   is zero-sized.
+    // safety: `capacity >= len > 0`.
     let element = unsafe { self.slimvec.raw.read(self.yield_range.start - 1) };
     Some(element)
   }
@@ -88,9 +86,7 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
       return None;
     }
     self.yield_range.end -= 1;
-    // safety:
-    // - If `self.len()` is not zero then either the vector is allocated or `T`
-    //   is zero-sized.
+    // safety: `capacity >= len > 0`.
     let element = unsafe { self.slimvec.raw.read(self.yield_range.end) };
     Some(element)
   }
@@ -131,7 +127,7 @@ impl<T> IntoIter<T> {
   #[inline]
   pub(crate) fn new(mut slimvec: SlimVec<T>) -> IntoIter<T> {
     let yield_range = 0..slimvec.len();
-    if slimvec.raw.is_allocated() || T::IS_ZST {
+    if slimvec.raw.is_capacity_gt_zero() {
       // Unwind-safety of `SlimVec` is maintained by setting its length to zero
       // before creation of the `IntoIter`. This prevents the state of the
       // `SlimVec`, which would otherwise be logically broken, from being
@@ -139,6 +135,8 @@ impl<T> IntoIter<T> {
       //
       // This shifts the responsibility onto the `IntoIter` to run destructors
       // for remaining elements.
+
+      // safety: `capacity > 0`.
       unsafe { slimvec.raw.set_length(0) };
     }
     IntoIter {

@@ -74,11 +74,14 @@ const unsafe fn zst_encode_length<T>(
 ) -> ptr::NonNull<HeapData<T>> {
   debug_assert!(
     length <= RawSlimVec::<T>::MAX_CAPACITY,
-    "safety criteria must be met"
+    "required safety criteria"
   );
 
-  let encoded_length = unsafe { NonZero::new(!length).unwrap_unchecked() };
-  ptr::NonNull::without_provenance(encoded_length)
+  let encoded_length = NonZero::new(!length);
+  ptr::NonNull::without_provenance(unsafe {
+    debug_assert!(encoded_length.is_some(), "implied by safety criteria");
+    encoded_length.unwrap_unchecked()
+  })
 }
 
 /// Decode a length from a NonNull pointer
@@ -287,7 +290,7 @@ impl<T> HeapData<T> {
   unsafe fn drop_in_place(ptr: ptr::NonNull<Self>, range: Range<usize>) {
     debug_assert!(
       range.end <= unsafe { HeapData::read_capacity(ptr).get() },
-      "safety criteria must be met"
+      "required safety criteria"
     );
 
     let offset = mem::offset_of!(HeapData<T>, buffer);
@@ -434,13 +437,24 @@ impl<T> RawSlimVec<T> {
   ///
   /// Otherwise there is no allocation and `Self::ptr` must not be dereferenced
   /// or used for any memory accesses.
+  ///
+  /// Note: `self.is_allocated()` implies `self.is_capacity_gt_zero` (but not
+  /// the converse).
   #[inline]
   pub(crate) fn is_allocated(&self) -> bool {
     if T::IS_ZST {
-      return false;
+      false
+    } else {
+      self.ptr != Self::SENTINEL_UNALLOCATED
     }
+  }
 
-    self.ptr != Self::SENTINEL_UNALLOCATED
+  /// Cheap quivalent to `self.capacity() > 0`, avoiding memory reads
+  #[inline]
+  pub(crate) fn is_capacity_gt_zero(&self) -> bool {
+    let is_gt_zero = self.is_allocated() || T::IS_ZST;
+    debug_assert_eq!(self.capacity() > 0, is_gt_zero, "required invariant");
+    is_gt_zero
   }
 
   /// Get a reference to the `HeapData` of the vector
@@ -485,9 +499,8 @@ impl<T> RawSlimVec<T> {
   ///
   /// # Safety
   ///
-  /// - The vector must have allocated, or `T` must be zero-sized.
+  /// - `self.capacity()` must be greater than zero.
   /// - `new_length` must be less than or equal to `self.capacity()`.
-  /// - `new_length` must be less than or equal to [`MAX_CAPACITY`].
   /// - all elements in the range `0..new_length` must be initialised.
   ///
   /// After this call elements in the range `new_length..` are permitted to be
@@ -495,10 +508,8 @@ impl<T> RawSlimVec<T> {
   #[inline]
   pub(crate) unsafe fn set_length(&mut self, new_length: usize) {
     debug_assert!(
-      (self.is_allocated() || T::IS_ZST)
-        && (new_length <= self.capacity())
-        && (new_length <= Self::MAX_CAPACITY),
-      "safety criteria must be met"
+      self.is_capacity_gt_zero() && (new_length <= self.capacity()),
+      "required safety criteria"
     );
 
     if T::IS_ZST {
@@ -566,7 +577,7 @@ impl<T> RawSlimVec<T> {
   ///
   /// # Safety
   ///
-  /// - The vector must have allocated, or `T` must be zero-sized.
+  /// - `self.capacity()` must be greater than zero.
   ///
   /// After this call, all dangling pointers will be invalid.
   ///
@@ -574,10 +585,7 @@ impl<T> RawSlimVec<T> {
   ///
   /// - Panics if allocation fails.
   pub(crate) unsafe fn reallocate(&mut self, buffer_capacity: NonZero<usize>) {
-    debug_assert!(
-      self.is_allocated() || T::IS_ZST,
-      "safety criteria must be met"
-    );
+    debug_assert!(self.is_capacity_gt_zero(), "required safety criteria");
 
     if T::IS_ZST {
       assert!(
@@ -603,15 +611,12 @@ impl<T> RawSlimVec<T> {
   ///
   /// # Safety
   ///
-  /// - The vector must have allocated, or `T` must be zero-sized.
+  /// - `self.capacity()` must be greater than zero.
   ///
   /// After this call all dangling pointers will be invalid.
   #[inline]
   pub(crate) unsafe fn deallocate(&mut self) {
-    debug_assert!(
-      self.is_allocated() || T::IS_ZST,
-      "safety criteria must be met"
-    );
+    debug_assert!(self.is_capacity_gt_zero(), "required safety criteria");
 
     if T::IS_ZST {
       return;
@@ -640,7 +645,7 @@ impl<T> RawSlimVec<T> {
   /// `range.start` to maintain the validity of the `RawSlimVec`.
   #[inline]
   pub(crate) unsafe fn drop_in_place(&mut self, range: Range<usize>) {
-    debug_assert!(range.end <= self.capacity(), "safety criteria must be met");
+    debug_assert!(range.end <= self.capacity(), "required safety criteria");
 
     if range.is_empty() {
       return;
@@ -671,20 +676,14 @@ impl<T> RawSlimVec<T> {
   ///
   /// # Safety
   ///
-  /// - The vector must have allocated, or `T` must be zero-sized.
+  /// - `self.capacity()` must be greater than zero.
   #[inline]
   pub(crate) unsafe fn buffer_ptr(&self) -> ptr::NonNull<T> {
-    debug_assert!(
-      self.is_allocated() || T::IS_ZST,
-      "safety criteria must be met"
-    );
+    debug_assert!(self.is_capacity_gt_zero(), "required safety criteria");
 
     // safety:
-    // - `self.ptr` is valid since the caller promises that the vector has
-    //   allocated if `T` is non-zero-sized.
-    // - 0 is trivially less than the (NonZero) capacity of an allocated buffer
-    //   of non-zero-sized `T`, and also trivially less than [`MAX_CAPACITY`]
-    //   for zero-sized `T`.
+    // - Caller promises `capacity > 0`.
+    // - 0 is trivially less than or equal to any capacity.
     unsafe { self.element_ptr(0) }
   }
 
@@ -696,13 +695,13 @@ impl<T> RawSlimVec<T> {
   ///
   /// # Safety
   ///
-  /// - The vector must have allocated, or `T` must be zero-sized.
-  /// - `index` must be less than or equal to the `capacity`.
+  /// - `self.capacity()` must be greater than zero.
+  /// - `index` must be less than or equal to `self.capacity()`.
   #[inline]
   pub(crate) unsafe fn element_ptr(&self, index: usize) -> ptr::NonNull<T> {
     debug_assert!(
-      (self.is_allocated() || T::IS_ZST) && index <= self.capacity(),
-      "safety criteria must be met"
+      self.is_capacity_gt_zero() && (index <= self.capacity()),
+      "required safety criteria"
     );
 
     if T::IS_ZST {
@@ -720,16 +719,16 @@ impl<T> RawSlimVec<T> {
   ///
   /// # Safety
   ///
-  /// - The vector must have allocated, or `T` must be zero_sized.
-  /// - `index` must be less than `capacity`.
+  /// - `self.capacity()` must be greater than zero.
+  /// - `index` must be less than `self.capacity()`.
   ///
   /// If there was already an initialised element at `index` then its
   /// destructor will not run.
   #[inline]
   pub(crate) unsafe fn write(&mut self, index: usize, value: T) {
     debug_assert!(
-      (self.is_allocated() || T::IS_ZST) && index < self.capacity(),
-      "safety criteria must be met"
+      self.is_capacity_gt_zero() && (index < self.capacity()),
+      "required safety criteria"
     );
 
     unsafe { self.element_ptr(index).write(value) }
@@ -739,8 +738,8 @@ impl<T> RawSlimVec<T> {
   ///
   /// # Safety
   ///
-  /// - The vector must have allocated, or `T` must be zero_sized.
-  /// - `index` must be less than `capacity`.
+  /// - `self.capacity()` must be greater than zero.
+  /// - `index` must be less than `self.capacity()`.
   /// - The element at `index` must be initialised.
   ///
   /// After this call, the value in the buffer at `index` will be considered to
@@ -748,10 +747,14 @@ impl<T> RawSlimVec<T> {
   #[inline]
   pub(crate) unsafe fn read(&self, index: usize) -> T {
     debug_assert!(
-      (self.is_allocated() || T::IS_ZST) && index < self.capacity(),
-      "safety criteria must be met"
+      self.is_capacity_gt_zero() && (index < self.capacity()),
+      "required safety criteria"
     );
 
+    // safety:
+    // - Caller promises that `capacity > 0`.
+    // - Caller promises that `index < capacity`.
+    // - Caller promises that the element at `index` is valid for reads.
     unsafe { self.element_ptr(index).read() }
   }
 
@@ -761,21 +764,18 @@ impl<T> RawSlimVec<T> {
   /// `length` is the number of elements in the vector, and the `capacity` is
   /// the allocated capacity of the buffer (in elements).
   ///
-  /// The caller may pass these components back to `Self::from_parts` in order
-  /// to reconstitute the vector and allow destructors to run.
+  /// The caller may pass these components back to [`Self::from_parts`] in
+  /// order to reconstitute the vector and allow destructors to run.
   #[inline]
   pub(crate) fn into_parts(self) -> (ptr::NonNull<T>, usize, usize) {
     let length = self.length();
     let capacity = self.capacity();
-    let ptr = if T::IS_ZST {
-      ptr::NonNull::dangling()
-    } else if self.is_allocated() {
+    let ptr = if self.is_allocated() {
       // safety: `self.ptr` is valid since the vector is allocated.
       unsafe { HeapData::buffer_ptr(self.ptr) }
     } else {
       ptr::NonNull::dangling()
     };
-
     mem::forget(self);
     (ptr, length, capacity)
   }
@@ -806,7 +806,7 @@ impl<T> RawSlimVec<T> {
   ) -> Self {
     debug_assert!(
       (length <= capacity) && (capacity <= Self::MAX_CAPACITY),
-      "safety criteria must be met"
+      "required safety criteria"
     );
 
     if T::IS_ZST {
@@ -867,7 +867,12 @@ impl<T> RawSlimVec<T> {
 
   /// Grow the capacity of the vector to `new_capacity`
   ///
-  /// The capacity will remain at least as large as `self.capacity()`.
+  /// The capacity will remain at least as large as the current value of
+  /// `self.capacity()`.
+  ///
+  /// # Panics
+  ///
+  /// - Panics if allocation fails.
   #[inline]
   pub(crate) fn grow_to(&mut self, new_capacity: usize) {
     if new_capacity <= self.capacity() {
@@ -877,7 +882,7 @@ impl<T> RawSlimVec<T> {
       NonZero::new(new_capacity).unwrap_or_else(|| unreachable!());
     if self.is_allocated() {
       // safety:
-      // - The vector is allocated.
+      // - `is_allocated` implies `capacity > 0`.
       // - Receiver is `&mut self`, so there are no dangling references.
       unsafe { self.reallocate(new_capacity) };
     } else {
@@ -890,10 +895,7 @@ impl<T> RawSlimVec<T> {
   /// `self.capacity()` must be greater than `self.length()`.
   #[inline]
   pub(crate) unsafe fn push_unchecked(&mut self, v: T) {
-    debug_assert!(
-      self.capacity() > self.length(),
-      "safety criteria must be met"
-    );
+    debug_assert!(self.capacity() > self.length(), "required safety criteria");
 
     let count = self.length();
     unsafe {
@@ -904,10 +906,10 @@ impl<T> RawSlimVec<T> {
 
   /// # Safety
   ///
-  /// `self.length()` must be greater than `0`.
+  /// `self.length()` must be greater than zero.
   #[inline]
   pub(crate) unsafe fn pop_unchecked(&mut self) -> T {
-    debug_assert!(self.length() > 0, "safety criteria must be met");
+    debug_assert!(self.length() > 0, "required safety criteria");
 
     let new_length = self.length() - 1;
     unsafe {
@@ -922,13 +924,14 @@ impl<T> RawSlimVec<T> {
 impl<T> Drop for RawSlimVec<T> {
   #[inline]
   fn drop(&mut self) {
-    if T::IS_ZST || self.is_allocated() {
+    if self.is_capacity_gt_zero() {
       let count = self.length();
-      unsafe {
-        self.set_length(0);
-        self.drop_in_place(0..count);
-        self.deallocate();
-      }
+      // safety: `capacity > 0`, which also implies `0 <= capacity`.
+      unsafe { self.set_length(0) };
+      // safety: structure invariants promise that `0..count` are initialised.
+      unsafe { self.drop_in_place(0..count) };
+      // safety: `capacity > 0`.
+      unsafe { self.deallocate() };
     }
   }
 }
@@ -943,17 +946,27 @@ where
       return RawSlimVec { ptr: self.ptr };
     }
 
-    let mut clone = RawSlimVec::EMPTY;
     let Some(length) = NonZero::new(self.length()) else {
-      return clone;
+      return RawSlimVec::EMPTY;
     };
+
+    // After allocating, `length != 0` implies `clone.capacity >= length > 0`.
+    let mut clone = RawSlimVec::EMPTY;
     clone.allocate(length);
-    for i in 0..length.get() {
-      unsafe {
-        let v: &T = self.element_ptr(i).as_ref();
-        clone.write(i, v.clone());
-      }
+    for index in 0..length.get() {
+      // safety:
+      // - `self.capacity > 0`.
+      // - `index < length` implies `index <= self.capacity`.
+      let element: &T = unsafe { self.element_ptr(index).as_ref() };
+      // safety:
+      // - `clone.capacity > 0`.
+      // - `index < length` implies `index < clone.capacity`.
+      unsafe { clone.write(index, element.clone()) };
     }
+    // safety:
+    // - `clone.capacity >= length > 0`.
+    // - all elements up to `length` are initialised, since each element of
+    //   `self` was promised to be initialised.
     unsafe { clone.set_length(length.get()) };
     clone
   }

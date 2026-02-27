@@ -50,6 +50,7 @@ where
           )
         };
       }
+      // safety: `filter_range.len() > 0` implies `capacity > 0`.
       unsafe { self.slimvec.raw.set_length(len + 1) };
     }
     None
@@ -73,6 +74,7 @@ impl<T, F> ExtractIf<'_, T, F> {
     let filter_range = conform_range(range, slimvec.len());
     let original_len = slimvec.len();
     if original_len > 0 {
+      // safety: `len > 0` implies `capacity > 0`.
       unsafe { slimvec.raw.set_length(filter_range.start) };
     }
     ExtractIf {
@@ -94,9 +96,10 @@ impl<T, F> Drop for ExtractIf<'_, T, F> {
           self.slimvec.raw.element_ptr(len),
           self.slimvec.raw.element_ptr(tail.start),
           tail.len(),
-        );
-        self.slimvec.raw.set_length(len + tail.len());
-      }
+        )
+      };
+      // safety: `tail.len != 0` implies `slimvec.capacity > 0`.
+      unsafe { self.slimvec.raw.set_length(len + tail.len()) };
     }
   }
 }
@@ -108,6 +111,7 @@ where
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let index = self.filter_range.start;
     let peek = match !self.filter_range.is_empty() {
+      // safety: `filter_range.len != 0` implies `slimvec.capacity > 0`.
       true => Some(unsafe { self.slimvec.raw.element_ptr(index).as_ref() }),
       _ => None,
     };

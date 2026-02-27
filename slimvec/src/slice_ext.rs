@@ -41,6 +41,7 @@ impl<T> SliceExt for [T] {
     let mut slimvec = SlimVec::new();
     let capacity = self.len().checked_mul(n).expect("overflow");
     if capacity > 0 {
+      // After this reserve, `capacity > 0`.
       slimvec.reserve_exact(capacity);
       for i in 0..n {
         unsafe {
@@ -51,6 +52,7 @@ impl<T> SliceExt for [T] {
           );
         }
       }
+      // safety: `capacity > 0`.
       unsafe { slimvec.raw.set_length(self.len() * n) };
     }
     slimvec

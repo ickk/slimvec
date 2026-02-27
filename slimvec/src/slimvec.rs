@@ -95,20 +95,13 @@ impl<T> SlimVec<T> {
   pub fn truncate(&mut self, new_length: usize) {
     let length = self.len();
     if new_length < length {
-      debug_assert!(
-        self.capacity() > 0,
-        "The vector is allocated or T is zero-sized, since the length is non-zero"
-      );
       // safety:
-      // - The vector has allocated or `T` is zero-sized;
-      // - `new_length` is less than `length`, so is trivially a valid length
-      //   for either non-zero-sized or zero-sized `T`.
-      // - The previous observation also guarantees that all elements in the
-      //   range `0..new_length` are initialised.
-      unsafe {
-        self.raw.set_length(new_length);
-        self.raw.drop_in_place(new_length..length);
-      }
+      // - `0 <= new_length < len <= capacity`.
+      // - `0..len` is init, which implies the subset `0..new_len` is init.
+      unsafe { self.raw.set_length(new_length) };
+      // safety:
+      // - `0..len` is init, which implies the subset `new_len..len` is init.
+      unsafe { self.raw.drop_in_place(new_length..length) };
     }
   }
 
@@ -160,12 +153,11 @@ impl<T> SlimVec<T> {
 
   #[inline]
   pub fn as_slice(&self) -> &[T] {
-    if self.raw.is_allocated() || T::IS_ZST {
-      // safety: the vector has allocated or `T` is zero-sized.
-      unsafe {
-        let buffer_ptr = self.raw.buffer_ptr().as_ptr();
-        slice::from_raw_parts(buffer_ptr, self.len())
-      }
+    if self.raw.is_capacity_gt_zero() {
+      // safety: capacity > 0.
+      let buffer_ptr = unsafe { self.raw.buffer_ptr().as_ptr() };
+      // safety: buffer_ptr is valid for reads of T within range 0..len.
+      unsafe { slice::from_raw_parts(buffer_ptr, self.len()) }
     } else {
       &[]
     }
@@ -173,12 +165,11 @@ impl<T> SlimVec<T> {
 
   #[inline]
   pub fn as_mut_slice(&mut self) -> &mut [T] {
-    if self.raw.is_allocated() || T::IS_ZST {
-      // safety: the vector has allocated or `T` is zero-sized.
-      unsafe {
-        let buffer_ptr = self.raw.buffer_ptr().as_ptr();
-        slice::from_raw_parts_mut(buffer_ptr, self.len())
-      }
+    if self.raw.is_capacity_gt_zero() {
+      // safety: capacity > 0.
+      let buffer_ptr = unsafe { self.raw.buffer_ptr().as_ptr() };
+      // safety: buffer_ptr is valid for reads/writes of T within range 0..len.
+      unsafe { slice::from_raw_parts_mut(buffer_ptr, self.len()) }
     } else {
       &mut []
     }
@@ -187,33 +178,41 @@ impl<T> SlimVec<T> {
   #[inline]
   pub fn swap_remove(&mut self, index: usize) -> T {
     let count = self.len();
-    if index >= count {
-      panic!("index is out of bounds");
-    }
-
+    assert!(index < count, "index is out of bounds");
+    let new_length = count - 1;
+    // safety:
+    // - `0 <= index <= new_len < len <= capacity`.
+    // - `0..len` is initialised, which implies subset `0..new_len` is init.
+    unsafe { self.raw.set_length(new_length) };
+    // safety:
+    // - `0..len` is init, so `index` & `new_len` are init but may overlap.
     unsafe {
-      self.raw.set_length(count - 1);
       ptr::NonNull::swap(
         self.raw.element_ptr(index),
-        self.raw.element_ptr(count - 1),
-      );
-      self.raw.read(count - 1)
-    }
+        self.raw.element_ptr(new_length),
+      )
+    };
+    // safety:
+    // - `new_len` is init.
+    // - `self.length` was decremented so `new_len` will not be read again.
+    unsafe { self.raw.read(new_length) }
   }
 
   #[inline]
   pub fn insert(&mut self, index: usize, element: T) {
     let count = self.len();
-    if index > count {
-      panic!("index is out of bounds");
-    }
+    assert!(index <= count, "index is out of bounds");
 
+    // After this reserve, it is known that capacity > length >= 0.
     self.reserve(1);
+
     if index == count {
+      // safety: capacity > length.
       unsafe { self.raw.push_unchecked(element) };
       return;
     }
 
+    let new_length = count + 1;
     unsafe {
       self.raw.set_length(0);
       ptr::NonNull::copy_from(
@@ -222,18 +221,18 @@ impl<T> SlimVec<T> {
         count - index,
       );
       self.raw.write(index, element);
-      self.raw.set_length(count + 1);
+      self.raw.set_length(new_length);
     }
   }
 
   #[inline]
   pub fn remove(&mut self, index: usize) -> T {
     let count = self.len();
-    if index >= count {
-      panic!("index is out of bounds");
-    }
+    assert!(index < count, "index is out of bounds");
+    let new_length = count - 1;
 
-    if index == count - 1 {
+    if index == new_length {
+      // safety: 0 <= index < length.
       return unsafe { self.raw.pop_unchecked() };
     }
 
@@ -246,7 +245,7 @@ impl<T> SlimVec<T> {
         self.raw.element_ptr(index + 1),
         count - index - 1,
       );
-      self.raw.set_length(count - 1);
+      self.raw.set_length(new_length);
     }
     out
   }
@@ -257,16 +256,24 @@ impl<T> SlimVec<T> {
     let other_length = other.len();
     let self_length = self.len();
     if other_length > 0 {
+      // After this reserve, it is known that
+      // `self.cap >= (self.len + other.len) > 0`.
       self.reserve(other_length);
       unsafe {
-        other.raw.set_length(0);
         ptr::NonNull::copy_from(
           self.raw.element_ptr(self_length),
           other.raw.buffer_ptr(),
           other_length,
-        );
-        self.raw.set_length(self_length + other_length)
-      }
+        )
+      };
+      // safety:
+      // - other_cap >= other_len > 0.
+      unsafe { other.raw.set_length(0) };
+      // safety:
+      // - `cap >= len + other_len > 0`.
+      // - just initialised `self.len..other_len` in `self`.
+      // - corresponding elements of `other` are never read again.
+      unsafe { self.raw.set_length(self_length + other_length) }
     }
   }
 
@@ -285,14 +292,15 @@ impl<T> SlimVec<T> {
     R: RangeBounds<usize> + Clone,
   {
     let range = conform_range(src, self.len());
-    let additional = range.len();
-    self.reserve(additional);
+    self.reserve(range.len());
     for index in range {
-      debug_assert!(self.raw.is_allocated() || T::IS_ZST);
-      unsafe {
-        let element: T = self.get_unchecked(index).clone();
-        self.raw.push_unchecked(element);
-      };
+      debug_assert!(self.raw.is_capacity_gt_zero());
+      // safety: Loop bounds guarantee `index < self.len()`.
+      let element: &T = unsafe { self.get_unchecked(index) };
+      // safety:
+      // - The `reserve` guarantees there is enough capacity for each iteration
+      //   of the loop to push once.
+      unsafe { self.raw.push_unchecked(element.clone()) };
     }
   }
 
@@ -305,20 +313,24 @@ impl<T> SlimVec<T> {
   where
     F: FnMut(&T) -> bool,
   {
-    let count = self.len();
-    let mut new_len = 0;
-    unsafe { self.raw.set_length(0) };
-    for i in 0..count {
-      let v: &mut T = unsafe { self.raw.element_ptr(i).as_mut() };
-      if keep(v) {
-        let v: T = unsafe { self.raw.read(i) };
-        unsafe { self.raw.write(new_len, v) };
-        new_len += 1;
-      } else {
-        unsafe { ptr::drop_in_place(v) };
+    if self.raw.is_capacity_gt_zero() {
+      let count = self.len();
+      // safety: `capacity > 0`.
+      unsafe { self.raw.set_length(0) };
+      let mut new_len = 0;
+      for i in 0..count {
+        let v: &mut T = unsafe { self.raw.element_ptr(i).as_mut() };
+        if keep(v) {
+          let v: T = unsafe { self.raw.read(i) };
+          unsafe { self.raw.write(new_len, v) };
+          new_len += 1;
+        } else {
+          unsafe { ptr::drop_in_place(v) };
+        }
       }
+      // safety: `capacity > 0`.
+      unsafe { self.raw.set_length(new_len) };
     }
-    unsafe { self.raw.set_length(new_len) };
   }
 
   /// Retains only the elements specified by the predicate
@@ -331,20 +343,24 @@ impl<T> SlimVec<T> {
   where
     F: FnMut(&mut T) -> bool,
   {
-    let count = self.len();
-    let mut new_len = 0;
-    unsafe { self.raw.set_length(0) };
-    for i in 0..count {
-      let v: &mut T = unsafe { self.raw.element_ptr(i).as_mut() };
-      if keep(v) {
-        let v: T = unsafe { self.raw.read(i) };
-        unsafe { self.raw.write(new_len, v) };
-        new_len += 1;
-      } else {
-        unsafe { ptr::drop_in_place(v) };
+    if self.raw.is_capacity_gt_zero() {
+      let count = self.len();
+      // safety: `capacity > 0`.
+      unsafe { self.raw.set_length(0) };
+      let mut new_len = 0;
+      for i in 0..count {
+        let v: &mut T = unsafe { self.raw.element_ptr(i).as_mut() };
+        if keep(v) {
+          let v: T = unsafe { self.raw.read(i) };
+          unsafe { self.raw.write(new_len, v) };
+          new_len += 1;
+        } else {
+          unsafe { ptr::drop_in_place(v) };
+        }
       }
+      // safety: `capacity > 0`.
+      unsafe { self.raw.set_length(new_len) };
     }
-    unsafe { self.raw.set_length(new_len) };
   }
 
   #[inline]
@@ -395,10 +411,14 @@ impl<T> SlimVec<T> {
           other.raw.buffer_ptr(),
           self.raw.element_ptr(range.start),
           range.len(),
-        );
+        )
+      };
+      // safety:
+      // - `range.len() != 0` implies `capacity > 0` for both `self` & `other`.
+      unsafe {
         self.raw.set_length(at);
         other.raw.set_length(range.len());
-      };
+      }
     }
     other
   }
@@ -446,9 +466,9 @@ impl<T> SlimVec<T> {
     if count == 0 {
       return;
     }
-    let mut new_len = 0;
+    // safety: `count != 0` implies `capacity > 0`.
     unsafe { self.raw.set_length(0) };
-
+    let mut new_len = 0;
     let mut bucket_e: ptr::NonNull<T> = unsafe { self.raw.element_ptr(0) };
     for i in 1..count {
       let mut v: ptr::NonNull<T> = unsafe { self.raw.element_ptr(i) };
@@ -462,6 +482,7 @@ impl<T> SlimVec<T> {
     }
     unsafe { self.raw.element_ptr(new_len).copy_from(bucket_e, 1) };
     new_len += 1;
+    // saftey: `count != 0` implies `capacity > 0`.
     unsafe { self.raw.set_length(new_len) };
   }
 
@@ -501,7 +522,7 @@ impl<T> SlimVec<T> {
 
   #[inline]
   pub fn leak<'a>(self) -> &'a mut [T] {
-    if !(self.raw.is_allocated() || T::IS_ZST) {
+    if !self.raw.is_capacity_gt_zero() {
       return &mut [];
     }
 
@@ -547,12 +568,13 @@ impl<T> SlimVec<T> {
       new_length <= self.capacity(),
       "new_length must be less than or equal to self.capacity()"
     );
-    // Note: If the vector is not allocated then the capacity is zero. The
-    // only valid new_length the caller could have passed in this case is
-    // also zero. So there is nothing to do.
-    if self.raw.is_allocated() || T::IS_ZST {
+    // Note: When the capacity is zero, then the current-length is also zero.
+    // In this case the *only* valid new_length the caller could have safely
+    // passed is also zero; which would be idempotent. Therefore there is
+    // nothing to do.
+    if self.raw.is_capacity_gt_zero() {
       // safety:
-      // - The vector is allocated or `T` is zero-sized.
+      // - capacity > 0.
       // - Caller promises that `new_length <= capacity`.
       // - Caller promises that elements in `0..new_length` are initialised.
       unsafe { self.raw.set_length(new_length) };
@@ -871,9 +893,13 @@ mod convert {
         return slim;
       }
 
-      // move values from `array` into `slim`.
+      // After this reserve `capacity >= N > 0`, since `N != 0`.
       slim.reserve_exact(N);
+
+      // move values from `array` into `slim`.
       let array_ptr: ptr::NonNull<[T; N]> = ptr::NonNull::from(&array);
+
+      // safety: `capacity > 0`.
       unsafe {
         ptr::NonNull::copy_from_nonoverlapping(
           slim.raw.buffer_ptr(),
@@ -884,6 +910,7 @@ mod convert {
       // drop array without calling destructors for its elements.
       _ = mem::ManuallyDrop::new(array);
 
+      // safety: `capacity > 0`.
       unsafe { slim.raw.set_length(N) }
       slim
     }
@@ -898,8 +925,11 @@ mod convert {
         return slim;
       }
 
-      // move values from `slice` into `slim`.
+      // After this reserve `capacity >= count > 0`, since `count != 0`.
       slim.reserve_exact(count);
+
+      // move values from `slice` into `slim`.
+      // safety: `capacity > 0`.
       unsafe {
         ptr::copy_nonoverlapping(
           slice.as_mut_ptr(),
@@ -912,6 +942,7 @@ mod convert {
       let box_ptr = Box::into_raw(slice) as *mut [mem::ManuallyDrop<T>];
       let _: Box<[mem::ManuallyDrop<T>]> = unsafe { Box::from_raw(box_ptr) };
 
+      // safety: `capacity > 0`.
       unsafe { slim.raw.set_length(count) };
       slim
     }
@@ -926,8 +957,11 @@ mod convert {
         return slim;
       };
 
-      // move values from `other` into `slim`.
+      // After this reserve, `capacity >= count > 0`, since `count != 0`.
       slim.reserve_exact(count);
+
+      // move values from `other` into `slim`.
+      // safety: `capacity > 0`.
       unsafe {
         ptr::copy_nonoverlapping(
           other.as_ptr(),
@@ -936,6 +970,7 @@ mod convert {
         )
       };
       unsafe { other.set_len(0) };
+      // safety: `capacity > 0`.
       unsafe { slim.raw.set_length(count) };
       slim
     }
