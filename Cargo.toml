@@ -10,10 +10,10 @@ edition = "2024"
 [workspace.dependencies]
 slimvec.path = "slimvec"
 
-arbitrary = "1.0"
-impls = "1.0.3"
-serde_core = "1.0"
-valuable = "0.1"
+arbitrary = { version = "1.0", default-features = false }
+impls = { version = "1.0", default-features = false }
+serde_core = { version = "1.0", default-features = false }
+valuable = { version = "0.1.0", default-features = false }
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
