@@ -12,6 +12,7 @@ slimvec.path = "slimvec"
 
 arbitrary = { version = "1.0", default-features = false }
 borsh = { version = "1.0", default-features = false }
+comparable = { version = "0.5", default-features = false }
 impls = { version = "1.0", default-features = false }
 serde_core = { version = "1.0", default-features = false }
 valuable = { version = "0.1.0", default-features = false }
