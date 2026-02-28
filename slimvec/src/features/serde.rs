@@ -59,8 +59,9 @@ where
   where
     Seq: SeqAccess<'de>,
   {
+    let mut slimvec = SlimVec::new();
     let capacity = seq.size_hint().unwrap_or(0);
-    let mut slimvec = SlimVec::with_capacity(capacity);
+    slimvec.reserve_hint(capacity);
     while let Some(element) = seq.next_element()? {
       slimvec.push(element);
     }
@@ -84,10 +85,9 @@ where
   where
     Seq: SeqAccess<'de>,
   {
-    self.0.truncate(0);
-    if let Some(capacity) = seq.size_hint() {
-      self.0.reserve(capacity);
-    }
+    self.0.clear();
+    let capacity = seq.size_hint().unwrap_or(0);
+    self.0.reserve_hint(capacity);
     while let Some(element) = seq.next_element()? {
       self.0.push(element);
     }
