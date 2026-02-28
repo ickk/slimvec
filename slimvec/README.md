@@ -11,6 +11,8 @@
 it has a smaller inline-size; the inline data is a thin pointer like thin-vec.
 
 `SlimVec` implements as much of the API surface of `Vec` as possible.
+Additionally includes optional features for `arbitrary`, `borsh`, `comparable`,
+`serde`, & `valuable`.
 
 - [Overview](docs/Overview.md)
 - [Features](docs/Features.md)

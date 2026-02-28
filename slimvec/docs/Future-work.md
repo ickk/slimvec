@@ -5,5 +5,3 @@ one-another.
 
 In the future `SlimVec` would like to add support for the currently unstable
 Rust features `allocator-api` & `#[may_dangle]`.
-
-Support for ecosystem Traits, e.g. serialisation, is also desirable.
