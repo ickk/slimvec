@@ -21,3 +21,7 @@
   This set of tests ensure that `SlimVec` behaves the same as `Vec` in
   practice. These tests include some trickier edge-cases and regression tests
   for logic bugs and UB found in the Standard Library over the years.
+
+- `tests/comparable.rs`
+
+  `comparable.rs` is a port of the `comparable` library's tests for `Vec`.

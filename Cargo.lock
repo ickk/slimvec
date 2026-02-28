@@ -140,6 +140,7 @@ dependencies = [
 name = "slimvec-testsuites"
 version = "0.0.0"
 dependencies = [
+ "comparable",
  "impls",
  "slimvec",
 ]

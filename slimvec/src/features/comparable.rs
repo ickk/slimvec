@@ -6,7 +6,7 @@ use {
   ::core::iter,
 };
 
-impl<T: PartialEq + Comparable> Comparable for SlimVec<T> {
+impl<T: Comparable> Comparable for SlimVec<T> {
   type Desc = SlimVec<T::Desc>;
   type Change = SlimVec<VecChange<T::Desc, T::Change>>;
 

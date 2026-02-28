@@ -5,8 +5,17 @@ name = "slimvec-testsuites"
 edition.workspace = true
 publish = false
 
+[features]
+arbitrary = ["slimvec/arbitrary"]
+borsh = ["slimvec/borsh"]
+comparable = ["slimvec/comparable"]
+serde = ["slimvec/serde"]
+std = ["slimvec/std"]
+valuable = ["slimvec/valuable"]
+
 [dependencies]
 
 [dev-dependencies]
+comparable.workspace = true
 impls.workspace = true
 slimvec.workspace = true
