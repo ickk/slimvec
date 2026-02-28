@@ -26,12 +26,14 @@ include = [
 default = ["std"]
 
 arbitrary = ["dep:arbitrary"]
+borsh = ["dep:borsh"]
 serde = ["dep:serde_core"]
 std = []
 valuable = ["dep:valuable"]
 
 [dependencies]
 arbitrary = { workspace = true, optional = true }
+borsh = { workspace = true, optional = true }
 serde_core = { workspace = true, optional = true }
 valuable = { workspace = true, optional = true }
 

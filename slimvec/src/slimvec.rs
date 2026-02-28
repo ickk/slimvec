@@ -28,6 +28,12 @@ impl<T> SlimVec<T> {
   /// of the host.
   pub const MAX_CAPACITY: usize = RawSlimVec::<T>::MAX_CAPACITY;
 
+  /// The max additional_hint of [`Self::reserve_hint`]
+  #[cfg(not(target_pointer_width = "16"))]
+  const MAX_RESERVE_HINT: usize = (1 << 20) / size_of::<T>();
+  #[cfg(target_pointer_width = "16")]
+  const MAX_RESERVE_HINT: usize = (1 << 10) / size_of::<T>();
+
   #[inline]
   pub const fn new() -> Self {
     SlimVec {
@@ -84,6 +90,18 @@ impl<T> SlimVec<T> {
       return;
     }
     self.raw.grow_to(new_capacity);
+  }
+
+  /// Reserve additional capacity with a hint
+  ///
+  /// The resulting capacity may be less than `self.len() + additional_hint`.
+  #[allow(unused, reason = "used by optional features")]
+  #[inline]
+  pub(crate) fn reserve_hint(&mut self, additional_hint: usize) {
+    if T::IS_ZST {
+      return;
+    }
+    self.reserve(usize::max(additional_hint, Self::MAX_RESERVE_HINT));
   }
 
   #[inline]
