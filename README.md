@@ -24,7 +24,7 @@ Additionally includes optional features for `arbitrary`, `borsh`, `comparable`,
 - [Features](slimvec/docs/Features.md)
 - [Architecture](slimvec/docs/Architecture.md)
 - [Testing](slimvec/docs/Testing.md)
-- [Future-work](slimvec/docs/Future-work.md)
+- [Differences to `Vec`](slimvec/docs/Differences-to-Vec.md)
 - [Alternatives](slimvec/docs/Alternatives.md)
 
 ```text

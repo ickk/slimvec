@@ -18,7 +18,7 @@ Additionally includes optional features for `arbitrary`, `borsh`, `comparable`,
 - [Features](docs/Features.md)
 - [Architecture](docs/Architecture.md)
 - [Testing](docs/Testing.md)
-- [Future-work](docs/Future-work.md)
+- [Differences to `Vec`](docs/Differences-to-Vec.md)
 - [Alternatives](docs/Alternatives.md)
 
 ```text
