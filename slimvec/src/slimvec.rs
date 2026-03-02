@@ -101,7 +101,7 @@ impl<T> SlimVec<T> {
     if T::IS_ZST {
       return;
     }
-    self.reserve(usize::max(additional_hint, Self::MAX_RESERVE_HINT));
+    self.reserve(usize::min(additional_hint, Self::MAX_RESERVE_HINT));
   }
 
   #[inline]
