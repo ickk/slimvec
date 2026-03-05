@@ -2,7 +2,7 @@
 
 [package]
 name = "slimvec"
-version = "0.4.8"
+version = "0.4.9"
 authors = ["ickk <crates@ickk.io>"]
 license = "Zlib OR MIT OR Apache-2.0"
 description = "Dynamic array with a smaller inline-size"
