@@ -104,6 +104,16 @@ slices:
 At this time equivalent methods are not provided in `slimvec`, however they may
 be added to `slimvec::SliceExt` in a future release.
 
+### ZSTs
+
+Both `Vec` & `SlimVec` specialise for element types which are zero-sized. In
+both cases this allows creating collections of zero-sized types without needing
+to allocate memory for them.
+
+`SlimVec` defines its maximum capacity for all element types to be
+`isize::MAX`, including for ZSTs. On the other hand, The Standard Library
+allows vectors with ZST elements to specially exceed `isize::MAX` in this case.
+
 ### Raw pointers
 
 `Vec` includes the following methods involving raw-pointers:
